@@ -1,0 +1,48 @@
+# OS
+.DS_Store
+Thumbs.db
+**/.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+.vs/
+
+# Env / secrets (корень и вложенные проекты)
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# .NET (backend)
+**/bin/
+**/obj/
+**/publish/
+*.user
+*.suo
+**/.nuget/
+**/TestResults/
+**/coverage/
+
+# Node (frontend)
+**/node_modules/
+**/dist/
+**/dist-ssr/
+**/.vite/
+
+# Логи и локальные БД
+*.log
+logs/
+**/*.db
+**/*.db-shm
+**/*.db-wal
+
+# Загрузки / runtime data
+**/data/uploads/
+
+# PHP / Laravel (если появится снова)
+**/vendor/
+
+# Cursor / прочее
+.cursor/
