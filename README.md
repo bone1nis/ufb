@@ -1,201 +1,100 @@
 # U.F.B. — Unified Feedback Board
 
-> Единая платформа обратной связи для образовательного процесса.
+Платформа сдачи и проверки домашних заданий с уведомлениями в ВКонтакте.
 
-## Почему U.F.B.?
+Методист создаёт задание → студент сдаёт работу файлами или ссылками → преподаватель ставит оценку и комментарий → студент получает уведомление в VK.
 
-| Буква | Значение | Смысл |
-|-------|----------|-------|
-| **U** | **Unified** | Единая точка входа для всех ролей: студент, преподаватель, методист |
-| **F** | **Feedback** | Суть системы — двусторонняя обратная связь: сдача → оценка → уведомление |
-| **B** | **Board** | Прозрачная «доска» задач и сдач, где каждый видит свой процесс |
+> Проект создан на хакатоне.
 
-Платформа закрывает полный цикл учебного задания: методист создаёт ДЗ → студент сдаёт работу (файлы или ссылки) → преподаватель оценивает → студент получает уведомление в ВКонтакте.
+## Возможности
 
----
-
-## Документация
-
-| Файл | Содержание |
+| Роль | Что делает |
 |------|------------|
-| [docs/README.md](./docs/README.md) | Общий обзор, быстрый старт, структура репозитория |
-| [docs/BACKEND.md](./docs/BACKEND.md) | API, модели, env, сервисы бэкенда |
-| [docs/FRONTEND.md](./docs/FRONTEND.md) | FSD, компоненты, маршруты, разработка UI |
+| **Студент** | Видит задания «К сдаче», сдаёт и правит работы, смотрит оценки и комментарии, статистику за месяц |
+| **Преподаватель** | Просматривает все сдачи с фильтрами, скачивает файлы, выставляет балл и комментарий |
+| **Методист** | Создаёт и редактирует задания: проект, направление, курс, дедлайн |
 
----
+**VK-бот** (Bots Long Poll): привязка аккаунта, команды `/start`, `/help`, `/status`, `/deadlines`, уведомления о сдачах и оценках, напоминания о дедлайнах за 24 часа и за 1 час.
 
-## Архитектура
+## Стек
 
-```
-┌─────────────────────────────────────────────────────┐
-│  Vue 3 SPA (`frontend/`)         FSD Architecture  │
-│  ┌─────────┐ ┌──────────┐ ┌──────────┐ ┌─────────┐ │
-│  │  pages  │ │ widgets  │ │ features │ │entities │ │
-│  └─────────┘ └──────────┘ └──────────┘ └─────────┘ │
-│                    shared/api  shared/lib             │
-└────────────────────────┬────────────────────────────┘
-                         │ HTTP + Cookie JWT
-┌────────────────────────▼────────────────────────────┐
-│  .NET 8 ASP.NET Core (backend/)                      │
-│  ┌───────────┐  ┌──────────────┐  ┌──────────────┐  │
-│  │ Endpoints │  │ VkLongPoll   │  │DeadlineRemind│  │
-│  │ (Minimal  │  │ Worker       │  │ Worker       │  │
-│  │  API)     │  │ (Background) │  │ (Background) │  │
-│  └───────────┘  └──────────────┘  └──────────────┘  │
-│  EF Core + Npgsql         JWT Auth (cookie + bearer) │
-└────────────────────────┬────────────────────────────┘
-                         │
-              ┌──────────▼──────────┐
-              │   PostgreSQL 15     │
-              └─────────────────────┘
-                         │
-              ┌──────────▼──────────┐
-              │   VK Bots Long Poll │
-              │   (message_new)     │
-              └─────────────────────┘
+| Часть | Технологии |
+|-------|------------|
+| Frontend | Vue 3, TypeScript, Vite, Pinia, Vue Router, Naive UI, Axios · Feature-Sliced Design |
+| Backend | .NET 8, ASP.NET Core, EF Core, JWT (httpOnly-cookie) |
+| Данные | PostgreSQL 15 |
+| Интеграции | VK Bots Long Poll API |
+| Окружение | Docker, Docker Compose, nginx |
+
+## Быстрый старт
+
+Нужен Docker с Compose v2.
+
+```bash
+git clone https://github.com/bone1nis/ufb.git
+cd ufb
+
+cp .env.example .env                    # необязательно — есть dev-значения
+cp backend/.env.example backend/.env    # токен VK; без него бот отключён
+
+docker compose -f docker-compose.dev.yml up -d --build
 ```
 
-### Frontend: Feature-Sliced Design (FSD)
+| Сервис | Адрес |
+|--------|-------|
+| Frontend | http://localhost:5173 |
+| API | http://localhost:8080 |
+| Swagger | http://localhost:8080/swagger |
 
-Подробно: **[docs/FRONTEND.md](./docs/FRONTEND.md)** — слои, компоненты, маршруты.
+Демо-аккаунты (только для разработки), пароль у всех `password`:
 
-**Правило импортов:** `shared → entities → features → widgets → pages → app`
+| Email | Роль |
+|-------|------|
+| `student@demo.ru` | Студент |
+| `teacher@demo.ru` | Преподаватель |
+| `methodist@demo.ru` | Методист |
 
-### Backend: .NET 8 Web API
+## Конфигурация
 
-Подробно: **[docs/BACKEND.md](./docs/BACKEND.md)** — все эндпоинты, auth, multipart, env.
-
----
-
-## Роли
-
-| Роль | Возможности |
-|------|-------------|
-| **student** | Список ДЗ, сдача работ (файлы + ссылки), история сдач, детали с оценкой |
-| **teacher** | Все сдачи с фильтрами, выставление оценок (балл + комментарий), скачивание файлов |
-| **methodist** | Создание заданий (название, описание, проект, направление, курс, дедлайн) |
-
----
-
-## API
-
-| Метод | Путь | Роль | Описание |
-|-------|------|------|----------|
-| `POST` | `/api/auth/login` | — | Авторизация, JWT в cookie |
-| `GET` | `/api/auth/me` | any | Текущий пользователь |
-| `POST` | `/api/auth/vk` | any | Привязка vk_user_id |
-| `POST` | `/api/auth/logout` | any | Выход |
-| `GET` | `/api/student/homeworks` | student | Список ДЗ |
-| `GET` | `/api/student/submissions` | student | Список сдач |
-| `POST` | `/api/student/submissions` | student | Отправить сдачу (multipart) |
-| `GET` | `/api/student/submissions/:id` | student | Детали сдачи |
-| `GET` | `/api/teacher/submissions` | teacher | Все сдачи |
-| `GET` | `/api/teacher/submissions/:id` | teacher | Детали сдачи |
-| `GET` | `/api/teacher/submissions/:id/files/:itemId` | teacher | Скачать файл |
-| `POST` | `/api/teacher/submissions/:id/grade` | teacher | Выставить оценку |
-| `GET` | `/api/methodist/homeworks` | methodist | Список ДЗ |
-| `POST` | `/api/methodist/homeworks` | methodist | Создать ДЗ |
-| `GET` | `/api/vk/diag` | — | Диагностика VK env |
-| `GET` | `/health` | — | Healthcheck |
-
----
-
-## Переменные окружения (runtime backend)
+Секреты не хранятся в репозитории — только в переменных окружения. Шаблоны: [.env.example](./.env.example), [backend/.env.example](./backend/.env.example), [frontend/.env.example](./frontend/.env.example).
 
 | Переменная | Обязательна | Описание |
 |-----------|-------------|----------|
-| `DB_HOST` | да | Хост PostgreSQL (в docker: `postgres`) |
-| `DB_PORT` | нет | Порт, default `5432` |
-| `DB_NAME` | нет | База, default `hack_backend` |
-| `DB_USER` | нет | Пользователь, default `hack_user` |
-| `DB_PASS` | **да (prod)** | Пароль БД — masked GitLab variable |
-| `JWT_SECRET` | **да (prod)** | Секрет JWT — masked |
-| `JWT_EXPIRES_HOURS` | нет | Время жизни токена, default `24` |
-| `FRONTEND_ORIGIN` | да | URL фронта для CORS + тексты бота |
-| `UPLOADS_PATH` | нет | Путь к загрузкам, default `/app/data/uploads` |
-| `VK_GROUP_ACCESS_TOKEN` | нет | Токен сообщества ВКонтакте — masked |
-| `VK_GROUP_ID` | нет | Числовой id сообщества (или `clubNNNN`) |
-| `VK_MESSAGES_INCLUDE_GROUP_ID` | нет | `1` — передавать group_id в messages.send |
+| `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` | нет | Подключение к PostgreSQL (по умолчанию `postgres`, `5432`, `hack_backend`, `hack_user`) |
+| `DB_PASS` | да, вне dev | Пароль БД |
+| `JWT_SECRET` | да, вне dev | Секрет подписи JWT, ≥ 32 символов. Вне Development без него приложение не запустится |
+| `JWT_EXPIRES_HOURS` | нет | Время жизни токена, по умолчанию `24` |
+| `UPLOADS_PATH` | нет | Каталог загрузок, по умолчанию `/app/data/uploads` |
+| `VK_GROUP_ACCESS_TOKEN` | нет | Токен сообщества VK. Пусто — бот и уведомления отключены |
+| `VK_GROUP_ID` | нет | Числовой id сообщества |
+| `VK_MESSAGES_INCLUDE_GROUP_ID` | нет | `1` — передавать `group_id` в `messages.send` |
+| `VITE_API_URL` | фронт | Адрес API, по умолчанию `http://localhost:8080` |
+| `VITE_VK_BOT_URL` | фронт | Ссылка «Открыть бота» (`https://vk.com/im?sel=-<id>`) |
 
----
+### Настройка VK-бота
 
-## VK бот
+1. В сообществе: Управление → Работа с API → создать ключ с правом на сообщения.
+2. Там же включить Bots Long Poll и событие `message_new`.
+3. Разрешить сообщения сообщества.
+4. Записать токен и id в `backend/.env`.
 
-Бот работает через **Bots Long Poll API** (без Callback URL, встроен в процесс API).
+## Структура
 
-**Требования:**
-- В настройках сообщества ВКонтакте: Long Poll → тип событий → `message_new` ✓
-- Пользователь должен разрешить ЛС от сообщества
-
-**Команды:**
-| Команда | Описание |
-|---------|----------|
-| `/start` | Инструкция по привязке ВК к аккаунту |
-| `/help` | Список команд |
-| `/status` / `/статус` | Привязан ли аккаунт |
-| `/deadlines` / `/дедлайны` | Ближайшие дедлайны студента |
-
-**Уведомления (messages.send):**
-- Преподавателям → при новой сдаче, при создании нового ДЗ
-- Студенту → подтверждение сдачи, результат оценки
-- Автоматически → напоминания о дедлайнах (за 24ч и за 1ч, интервал 30 мин)
-
----
-
-## Быстрый старт (локально)
-
-```bash
-# 1. Создать backend/.env из backend/env.example и заполнить VK_* и JWT_SECRET
-cp backend/env.example backend/.env
-
-# 2. Поднять сервисы
-docker compose -f docker-compose.dev.yml up -d --build
-
-# Ссылку на бота ВК задай в `frontend/.env.production` как `VITE_VK_BOT_URL=...` (файл `.env` в Docker-контекст не попадает).
-# (файл `.env` в контекст сборки не копируется — см. `.dockerignore`).
-# (полный URL, например https://vk.com/im?sel=-NNNNNNN).
-
-# 3. Frontend доступен на http://localhost:5173
-# 4. Backend API на http://localhost:8080
-# 5. Swagger: http://localhost:8080/swagger
+```
+backend/    ASP.NET Core 8 API: контроллеры, сервисы, EF-миграции
+frontend/   Vue 3 + Vite, слои FSD
+docs/       подробная документация
 ```
 
-**Demo-аккаунты** (создаются при первом старте):
-| Email | Пароль | Роль |
-|-------|--------|------|
-| `student@demo.ru` | `password` | Студент |
-| `teacher@demo.ru` | `password` | Преподаватель |
-| `methodist@demo.ru` | `password` | Методист |
+- [docs/BACKEND.md](./docs/BACKEND.md) — API, модели, фоновые сервисы
+- [docs/FRONTEND.md](./docs/FRONTEND.md) — слои FSD, маршруты, правила разработки
 
----
+## Планы
 
-## Технические перспективы
-
-### Краткосрочно (следующий спринт)
-
-| Направление | Что добавить |
-|-------------|-------------|
-| **Redis** | Кэш сессий / refresh token store → убрать зависимость от cookie-only JWT; rate limiting для `/api/auth/login` |
-| **VK OAuth** | Создать VK App → `GET /api/auth/vk/oauth/start` → redirect → callback → автоматически привязывать id без ручного ввода |
-| **Файловое хранилище** | S3-совместимое хранилище (MinIO / Яндекс Object Storage) вместо volume → масштабирование на несколько инстансов |
-| **WebSockets / SSE** | Push-уведомления в браузер при появлении новой оценки (сейчас только ВКонтакте) |
-| **Пагинация** | `GET /api/teacher/submissions?page=1&per_page=20` — при большом числе сдач |
-
-### Среднесрочно
-
-| Направление | Что добавить |
-|-------------|-------------|
-| **Celery / Background jobs** | Перенести Email/VK-уведомления в очередь (RabbitMQ / Redis Streams) → не блокировать HTTP-ответ |
-| **Observability** | OpenTelemetry трейсы → Jaeger/Tempo; метрики → Prometheus + Grafana |
-| **CI тесты** | Unit-тесты для EF-репозиториев (TestContainers + Postgres), Playwright e2e для Vue |
-| **Роли расширить** | Администратор — управление пользователями, сброс паролей |
-| **Комментарии** | Тред комментариев к сдаче (итерационная проверка) |
-
-### Долгосрочно
-
-| Направление | Описание |
-|-------------|---------|
-| **Mobile-first** | PWA с оффлайн-кэшем или нативное приложение (Capacitor) |
-| **AI-ревью** | Автоматический первичный разбор кода через GPT API → черновой комментарий преподавателю |
-| **Аналитика** | Дашборд методиста: прогресс студентов, средние баллы, тепловая карта дедлайнов |
-| **Multi-tenant** | Несколько образовательных организаций в одном инстансе с изоляцией данных |
+- Пагинация списка сдач и rate limiting для логина
+- VK OAuth для автоматической привязки аккаунта
+- S3-совместимое хранилище файлов
+- Push-уведомления в браузере (SSE)
+- Очередь уведомлений
+- Тесты: Testcontainers для бэкенда, Playwright для фронта
+- Роль администратора

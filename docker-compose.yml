@@ -2,15 +2,15 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_DB: hack_backend
-      POSTGRES_USER: hack_user
-      POSTGRES_PASSWORD: secret
+      POSTGRES_DB: ${DB_NAME:-hack_backend}
+      POSTGRES_USER: ${DB_USER:-hack_user}
+      POSTGRES_PASSWORD: ${DB_PASS:-secret}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U hack_user -d hack_backend"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -20,14 +20,15 @@ services:
       context: ./backend
       dockerfile: Dockerfile
     env_file:
-      - ./backend/.env
+      - path: ./backend/.env
+        required: false
     environment:
       DB_HOST: postgres
       DB_PORT: 5432
-      DB_NAME: hack_backend
-      DB_USER: hack_user
-      DB_PASS: secret
-      JWT_SECRET: dev-secret-change-in-production-32ch
+      DB_NAME: ${DB_NAME:-hack_backend}
+      DB_USER: ${DB_USER:-hack_user}
+      DB_PASS: ${DB_PASS:-secret}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-production-32ch}
       UPLOADS_PATH: /app/data/uploads
       FRONTEND_ORIGIN: "http://localhost:5173"
       ASPNETCORE_ENVIRONMENT: Development

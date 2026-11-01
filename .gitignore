@@ -46,3 +46,7 @@ logs/
 
 # Cursor / прочее
 .cursor/
+
+# Claude Code
+.claude/
+CLAUDE.local.md
